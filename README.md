@@ -73,6 +73,7 @@ STEP 3 — LOCATE & MOVE PROJECT FOLDER
 - Search for the vs-feedback-tracker folder on my machine. Check these locations:
   - C:\Users\MY_ALIAS\vs-feedback-tracker (already in place — skip move)
   - C:\Users\MY_ALIAS\Downloads\vs-feedback-tracker
+  - C:\Users\MY_ALIAS\Downloads\vs-feedback-ticket-tool-main\vs-feedback-ticket-tool-main
   - C:\Users\MY_ALIAS\Desktop\vs-feedback-tracker
   - C:\Users\MY_ALIAS\Documents\vs-feedback-tracker
 - If found outside the target path, COPY it (don't move — in case terminal has a lock) to:
