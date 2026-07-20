@@ -42,41 +42,87 @@ backup/                 Daily ticket backups — created at runtime, not committ
 
 See `SETUP-GUIDE.md` for a step-by-step walkthrough and `TECHNICAL-OVERVIEW.md` for architecture details.
 
-## Copilot Prompts
+## 🚀 Setup with Copilot
 
-Use these prompts in GitHub Copilot Chat (VS Code or github.com) while working on this repo:
+Open **VS Code Copilot Chat** or **Copilot CLI**, then paste the prompt below — Copilot will handle the full setup automatically.
 
-### Understand the codebase
-```
-Explain how a ticket flows from the ADO API through the orchestrator to the UI in this app.
-```
-```
-What does lib/devdiv.js do and how does it identify which comments belong to the team vs the customer?
-```
+````
+I just received the vs-feedback-tracker project and need to set it up on my machine.
+Copilot, please do ALL of the following steps automatically:
 
-### Make changes
-```
-Add a new Express route in app.js that returns the 10 most recently updated tickets from the local store.
-```
-```
-Refactor the LLM call in lib/llm-client.js to support a configurable system prompt passed as a parameter.
-```
+STEP 1 — CHECK & INSTALL PREREQUISITES
+- Check if Node.js (v18+) is installed by running: node --version
+  If not installed, run: winget install OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements
+- Check if Azure CLI is installed by running: az --version
+  If not installed, run: winget install Microsoft.AzureCLI --accept-source-agreements --accept-package-agreements
+- IMPORTANT: If you installed anything above, restart the terminal session so the new
+  commands are available in PATH before continuing.
 
-### Debug / investigate
-```
-Why might the app throw on startup when config.json is missing? Walk me through the startup path.
-```
-```
-The ADO client is returning 401. What environment variables or login state should I check first?
-```
+STEP 2 — DETECT MY IDENTITY
+- Get my Windows alias by running: $env:USERNAME
+  (this gives just the alias, e.g., "v-xxx")
+- Get my full name by running: net user $env:USERNAME /domain 2>$null | Select-String "Full Name"
+  (extract just the name part after "Full Name", e.g., "John Smith")
+- Set these variables:
+  - MY_ALIAS = the alias from above (e.g., v-xxx)
+  - MY_EMAIL = MY_ALIAS@microsoft.com
+  - MY_FULL_NAME = the full name from above, in lowercase (e.g., john smith)
+- Show me the detected values and ask me to confirm before proceeding.
 
-### AI / agent work
-```
-Write a new orchestrator action that summarizes all open tickets by priority and returns a markdown report.
-```
-```
-Extend the agent in lib/orchestrator.js to detect if a ticket has had no reply in 7+ days and flag it.
-```
+STEP 3 — LOCATE & MOVE PROJECT FOLDER
+- Search for the vs-feedback-tracker folder on my machine. Check these locations:
+  - C:\Users\MY_ALIAS\vs-feedback-tracker (already in place — skip move)
+  - C:\Users\MY_ALIAS\Downloads\vs-feedback-tracker
+  - C:\Users\MY_ALIAS\Desktop\vs-feedback-tracker
+  - C:\Users\MY_ALIAS\Documents\vs-feedback-tracker
+- If found outside the target path, COPY it (don't move — in case terminal has a lock) to:
+  C:\Users\MY_ALIAS\vs-feedback-tracker
+- If not found in any of the above, ask me where I saved it.
+
+STEP 4 — CONFIGURE THE PROJECT
+- Edit C:\Users\MY_ALIAS\vs-feedback-tracker\config.json — this is the ONLY config
+  file. Replace all 3 values with my detected identity:
+  {
+    "alias": "MY_ALIAS",
+    "email": "MY_EMAIL",
+    "fullName": "MY_FULL_NAME"
+  }
+  (The app reads this file automatically — no need to edit any other source files.)
+
+- Create the ticket data file at
+  C:\Users\MY_ALIAS\vs-feedback-tracker\data\tickets.json with this content:
+  { "tickets": [] }
+
+STEP 5 — INSTALL DEPENDENCIES
+- cd into C:\Users\MY_ALIAS\vs-feedback-tracker
+- Run: npm install
+
+STEP 6 — CREATE DESKTOP SHORTCUT
+- Create a Windows shortcut (.lnk) on my desktop:
+  - Name: VS Feedback Tracker
+  - Target: C:\Users\MY_ALIAS\vs-feedback-tracker\start.vbs
+  - Start in: C:\Users\MY_ALIAS\vs-feedback-tracker
+  - Icon: C:\Users\MY_ALIAS\vs-feedback-tracker\tracker.ico
+- Use PowerShell with WScript.Shell COM object to create the .lnk file.
+
+STEP 7 — AZURE LOGIN
+- Run: az login
+- Wait for me to complete the browser login flow before continuing.
+
+STEP 8 — VERIFY
+- cd into C:\Users\MY_ALIAS\vs-feedback-tracker
+- Run: node app.js
+- Confirm the server starts and is accessible at http://localhost:3000
+- After verifying, stop the server (Ctrl+C).
+- Tell me setup is complete and I can use the desktop shortcut to launch the app.
+
+IMPORTANT:
+- Don't change anything else in the project files.
+- Use full absolute paths (not relative) for all file operations.
+- Replace MY_ALIAS, MY_EMAIL, MY_FULL_NAME with the actual detected values everywhere.
+````
+
+> See `SETUP-GUIDE.md` for the full walkthrough including how to launch and stop the app.
 
 ## Notes
 - `config.json`, `data/`, and `backup/` are git-ignored since they contain personal identity info and real ticket content.
