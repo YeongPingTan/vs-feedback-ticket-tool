@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VS Feedback Ticket Tool</title>
+  <link rel="icon" href="tracker.ico" type="image/x-icon">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1 onclick="location.reload()" style="cursor:pointer;">🎫 VS Feedback Ticket Tool</h1>
+    <div class="header-actions">
+      <div class="search-wrapper">
+        <input type="text" id="search-input" placeholder="🔍 Search ticket ID..." autocomplete="off">
+        <div id="search-results" class="search-results"></div>
+      </div>
+      <button id="btn-open-modal" class="btn btn-primary">+ Add Tickets</button>
+      <button id="btn-refresh-all" class="btn btn-secondary">↻ Refresh Tickets</button>
+      <button id="btn-open-settings" class="btn btn-icon" title="Settings" aria-label="Settings">⚙️</button>
+      <span id="header-datetime" class="header-datetime"></span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Backlog Notification -->
+    <div id="backlog-notification" class="backlog-notification" style="display:none;">
+      <div class="backlog-header">
+        <span>⚠️ <strong>Backlog Alert:</strong> <span id="backlog-count">0</span> ticket(s) from previous weeks with no action taken</span>
+        <button class="btn btn-small btn-secondary" onclick="toggleBacklogDetails()">Show Details</button>
+      </div>
+      <div id="backlog-details" class="backlog-details" style="display:none;"></div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <section class="dashboard-section">
+      <!-- All-Time Summary -->
+      <div class="dashboard-header">
+        <h2>📊 Overall</h2>
+      </div>
+      <div class="summary-cards">
+        <div class="card card-total"><div class="card-number" id="stat-all-total">0</div><div class="card-label">Total Assigned</div></div>
+        <div class="card card-closed"><div class="card-number" id="stat-all-closed">0</div><div class="card-label">✅ Closed</div></div>
+        <div class="card card-red"><div class="card-number" id="stat-all-pending">0</div><div class="card-label">📋 Pending</div></div>
+      </div>
+
+      <!-- Current Month Summary -->
+      <div class="dashboard-header" style="margin-top: 32px;">
+        <h2>📅 This Month</h2>
+        <div class="input-group input-inline">
+          <label>Month:</label>
+          <select id="dashboard-month"></select>
+        </div>
+      </div>
+      <div class="summary-cards">
+        <div class="card card-total"><div class="card-number" id="stat-total">0</div><div class="card-label">Total Tickets</div></div>
+        <div class="card card-closed"><div class="card-number" id="stat-closed">0</div><div class="card-label">✅ Closed</div></div>
+        <div class="card card-red"><div class="card-number" id="stat-red">0</div><div class="card-label">🔴 Needs My Reply</div></div>
+        <div class="card card-yellow"><div class="card-number" id="stat-yellow">0</div><div class="card-label">🟡 Awaiting Reply</div></div>
+      </div>
+
+      <!-- Charts (for selected month) -->
+      <div class="charts-grid">
+        <div class="chart-container">
+          <h3>Tickets per Week</h3>
+          <canvas id="chart-weekly"></canvas>
+        </div>
+        <div class="chart-container">
+          <h3>Status Breakdown</h3>
+          <canvas id="chart-status"></canvas>
+        </div>
+        <div class="chart-container">
+          <h3>Reproduction Status</h3>
+          <canvas id="chart-repro"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ticket List -->
+    <div class="ticket-list-header">
+      <h2>📋 Ticket List</h2>
+      <div class="filter-group">
+        <label>Filter:</label>
+        <select id="filter-month">
+          <option value="">All Months</option>
+        </select>
+        <select id="filter-week">
+          <option value="">All Weeks</option>
+          <option value="1">Week 1</option>
+          <option value="2">Week 2</option>
+          <option value="3">Week 3</option>
+          <option value="4">Week 4</option>
+          <option value="5">Week 5</option>
+        </select>
+        <select id="filter-status">
+          <option value="">All Statuses</option>
+          <option value="red">🔴 Needs My Reply</option>
+          <option value="yellow">🟡 Awaiting Reply</option>
+          <option value="green">✅ Closed</option>
+        </select>
+        <button id="btn-clear-filters" class="btn btn-small btn-secondary">✕ Clear</button>
+      </div>
+    </div>
+
+    <section id="ticket-list" class="ticket-list">
+      <p class="empty-state">No tickets yet. Click "+ Add Tickets" to get started.</p>
+    </section>
+  </main>
+
+  <!-- ADD TICKETS MODAL -->
+  <div id="add-modal" class="modal-overlay" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Add Tickets</h2>
+        <button id="btn-close-modal" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label>Enter ticket IDs<br><span style="font-weight:normal;font-size:0.85em;color:#6b7280;">or paste from "Ticket List" sheet in Test_Month Excel sheet</span></label>
+          <textarea id="ticket-ids-input" placeholder='1XXXXXX&#10;&#10;OR&#10;&#10;"1XXXXXX&#10;2XXXXXX&#10;3XXXXXX&#10;4XXXXXX&#10;5XXXXXX"' rows="5"></textarea>
+        </div>
+        <div class="input-row">
+          <div class="input-group">
+            <label>Month</label>
+            <select id="input-month"></select>
+          </div>
+          <div class="input-group">
+            <label>Week</label>
+            <select id="input-week">
+              <option value="1">Week 1</option>
+              <option value="2">Week 2</option>
+              <option value="3">Week 3</option>
+              <option value="4">Week 4</option>
+              <option value="5">Week 5</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-add" class="btn btn-primary">Add Tickets</button>
+        <button id="btn-cancel-modal" class="btn btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settings-modal" class="modal-overlay" style="display:none;">
+    <div class="modal modal-settings">
+      <div class="modal-header">
+        <h2>⚙️ Settings</h2>
+      </div>
+      <div class="modal-body settings-layout">
+        <!-- Jump-to sidebar -->
+        <nav class="settings-nav" id="settings-nav">
+          <a href="#settings-interface">🖥️ Interface</a>
+          <a href="#settings-analyst">🧠 Ticket Analyst</a>
+          <a href="#settings-data">💾 Data</a>
+        </nav>
+
+        <div class="settings-content" id="settings-content">
+          <!-- Interface -->
+          <div class="settings-section" id="settings-interface">
+            <h3>🖥️ Interface</h3>
+
+            <div class="setting-row">
+              <div class="setting-label">
+                <span class="setting-name">Auto-refresh on load</span>
+                <span class="setting-desc">Automatically refresh all tickets from ADO each time the dashboard opens.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="set-autoRefreshOnLoad">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-label">
+                <span class="setting-name">Show backlog alert</span>
+                <span class="setting-desc">Display the banner warning about un-actioned tickets from previous weeks.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="set-showBacklogAlert">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Ticket Analyst (analysis + AI model + reply template) -->
+          <div class="settings-section" id="settings-analyst">
+            <h3>🧠 Ticket Analyst</h3>
+
+            <h4 class="setting-subgroup">🤖 AI Model</h4>
+
+            <div class="setting-row">
+              <div class="setting-label">
+                <span class="setting-name">Copilot model</span>
+                <span class="setting-desc">Model used by the analyst and reply generator (via your Copilot subscription).</span>
+              </div>
+              <select id="set-copilotModel" class="setting-select">
+                <option value="gpt-5.4-mini">gpt-5.4-mini (fast)</option>
+                <option value="gpt-5.4">gpt-5.4</option>
+                <option value="claude-sonnet-5">claude-sonnet-5</option>
+                <option value="claude-sonnet-4.5">claude-sonnet-4.5</option>
+                <option value="gpt-4.1">gpt-4.1</option>
+              </select>
+            </div>
+
+            <h4 class="setting-subgroup">🧠 Analysis</h4>
+
+            <div class="setting-row">
+              <div class="setting-label">
+                <span class="setting-name">Cross-reference analysis</span>
+                <span class="setting-desc">Search for potential duplicate tickets and generate a cross-referenced root-cause section. Turning this off makes analysis faster and uses fewer ADO calls.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="set-crossReference">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-label">
+                <span class="setting-name">Max similar tickets</span>
+                <span class="setting-desc">How many potential duplicates to fetch and show (0–5).</span>
+              </div>
+              <input type="number" id="set-maxSimilarTickets" class="setting-number" min="0" max="5" step="1">
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-label">
+                <span class="setting-name">Duplicate lookback (days)</span>
+                <span class="setting-desc">Only consider tickets created within this many days when searching for duplicates.</span>
+              </div>
+              <input type="number" id="set-similarLookbackDays" class="setting-number" min="1" max="3650" step="1">
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-label">
+                <span class="setting-name">Include diagnostic attachments</span>
+                <span class="setting-desc">Fetch VS Feedback diagnostics (screen recordings, ETL/dump, logs) from the Feedback backend during analysis. Turning this off makes analysis faster.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="set-includeDiagnostics">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <h4 class="setting-subgroup">✉️ Reply Template</h4>
+
+            <div class="setting-row">
+              <div class="setting-label">
+                <span class="setting-name">Generate optional questions</span>
+                <span class="setting-desc">Add ticket-specific "-Optional-" questions (🔍) after the 9 base questions in Need More Info / enhanced replies. Turn off to keep replies to the standard 9 questions only.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="set-includeOptionalQuestions">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Data -->
+          <div class="settings-section" id="settings-data">
+            <h3>💾 Data</h3>
+            <div class="setting-row">
+              <div class="setting-label">
+                <span class="setting-name">Backup retention (days)</span>
+                <span class="setting-desc">Number of daily ticket backups to keep in the backup folder.</span>
+              </div>
+              <input type="number" id="set-backupRetentionDays" class="setting-number" min="1" max="365" step="1">
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-label">
+                <span class="setting-name">Export tickets</span>
+                <span class="setting-desc">Download all tracked tickets (including your notes and repro status) as a backup or to move to another machine.</span>
+              </div>
+              <div class="setting-actions">
+                <button id="btn-export-json" class="btn btn-small btn-secondary" type="button">⬇️ JSON</button>
+                <button id="btn-export-csv" class="btn btn-small btn-secondary" type="button">⬇️ CSV</button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-label">
+                <span class="setting-name">Import tickets</span>
+                <span class="setting-desc">Restore from a JSON export. Existing tickets with the same ID are updated; new ones are added.</span>
+              </div>
+              <div class="setting-actions">
+                <input type="file" id="import-file" accept="application/json,.json" style="display:none;">
+                <button id="btn-import" class="btn btn-small btn-secondary" type="button">⬆️ Import JSON</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-save-settings" class="btn btn-primary">Save Settings</button>
+        <button id="btn-reset-settings" class="btn btn-secondary">Reset to Defaults</button>
+        <button id="btn-cancel-settings" class="btn btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Refresh progress (modal popup — blocks interaction while refreshing) -->
+  <div id="refresh-progress" class="modal-overlay refresh-modal-overlay" style="display:none;">
+    <div class="modal refresh-modal">
+      <div class="modal-header">
+        <h2><span class="refresh-spinner">↻</span> Refreshing Tickets</h2>
+      </div>
+      <div class="modal-body">
+        <div class="progress-info">
+          <span id="progress-text">Refreshing 0/0...</span>
+          <span id="progress-percent">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast"></div>
+
+  <footer class="app-footer">
+    VS Feedback Ticket Tool v1.0
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

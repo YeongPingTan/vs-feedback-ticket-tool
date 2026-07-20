@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Personal identity/config (copy config.json.example -> config.json and fill in)
+config.json
+
+# Ticket data & backups (contains real customer ticket content)
+data/*.json
+!data/tickets.json
+backup/
+*.bak
+*.tmp
+
+# Local DB
+data/agent.db
+*.db
+
+# Logs
+*.log
+repro_cycles_log.txt
+
+# Repro/debug artifacts (screenshots, video frames, temp repro folders)
+repro_*.png
+repro-*/
+repro2_*.png
+screenshot*.png
+video_frames*/
+watch*.png
+uac_restored.png
+ticket_*_analysis.json
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/

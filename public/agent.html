@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Analyst</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%236366f1'/%3E%3Crect x='8' y='11' width='16' height='12' rx='3' fill='%23fff'/%3E%3Ccircle cx='13' cy='17' r='2' fill='%236366f1'/%3E%3Ccircle cx='19' cy='17' r='2' fill='%236366f1'/%3E%3Cline x1='16' y1='7' x2='16' y2='11' stroke='%23fff' stroke-width='2'/%3E%3Ccircle cx='16' cy='6' r='1.5' fill='%23fff'/%3E%3C/svg%3E">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #ebedf0;
+      color: #2c3e50;
+      min-height: 100vh;
+    }
+    .header {
+      background: #f8f9fa;
+      border-bottom: 1px solid #d1d9e0;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .header h1 { font-size: 1.3rem; color: #1a1a2e; font-weight: 600; }
+    .header .badge {
+      background: #22c55e;
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+    .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+    .main-layout { display: flex; gap: 20px; align-items: flex-start; }
+    .main-content { flex: 1; min-width: 0; }
+
+    /* Section Nav Sidebar */
+    .section-nav {
+      position: sticky;
+      top: 16px;
+      width: 220px;
+      flex-shrink: 0;
+      background: #f6f7f9;
+      border: 1px solid #d5dbe3;
+      border-radius: 8px;
+      padding: 12px 0;
+      display: none;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+    }
+    .section-nav.active { display: block; }
+    .section-nav-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 16px 8px;
+      border-bottom: 1px solid #d5dbe3;
+      margin-bottom: 4px;
+    }
+    .section-nav a {
+      display: block;
+      padding: 6px 16px;
+      font-size: 13px;
+      color: #2c3e50;
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .section-nav a:hover {
+      background: #e8f0fe;
+      color: #2563eb;
+      border-left-color: #2563eb;
+    }
+    .section-nav a.active {
+      color: #2563eb;
+      background: rgba(37, 99, 235, 0.08);
+      border-left-color: #2563eb;
+      font-weight: 500;
+    }
+
+    /* Input Section */
+    .input-section {
+      background: #f6f7f9;
+      border: 1px solid #d5dbe3;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .input-row { display: flex; gap: 12px; align-items: end; }
+    .input-group { flex: 1; }
+    .input-group label {
+      display: block;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #ffffff;
+      border: 1px solid #c9cfd6;
+      border-radius: 6px;
+      color: #2c3e50;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-group input:focus { border-color: #3b82f6; }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-primary { background: #22c55e; color: #fff; }
+    .btn-primary:hover { background: #16a34a; }
+    .btn-primary:disabled { background: #e5e7eb; color: #9ca3af; cursor: wait; }
+    .btn-secondary { background: #f3f4f6; color: #2c3e50; border: 1px solid #d1d5db; }
+    .btn-secondary:hover { background: #e5e7eb; }
+
+    /* Progress */
+    .progress {
+      margin-top: 16px;
+      display: none;
+    }
+    .progress.active { display: block; }
+    .progress-log {
+      background: #ffffff;
+      border: 1px solid #d5dbe3;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 13px;
+      max-height: 200px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+    .progress-log .step { color: #64748b; }
+    .progress-log .step::before { content: '▸ '; color: #2563eb; }
+
+    /* Report */
+    .report-section {
+      display: none;
+      margin-top: 24px;
+    }
+    .report-section.active { display: block; }
+    .report-card {
+      background: #f6f7f9;
+      border: 1px solid #d5dbe3;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .report-header {
+      background: #eef0f4;
+      padding: 12px 24px;
+      border-bottom: 1px solid #d5dbe3;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .report-header h2 { font-size: 14px; color: #2563eb; }
+    .report-body {
+      padding: 24px;
+      font-size: 14px;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+    .report-body h2 { color: #2563eb; margin: 24px 0 12px; font-size: 18px; border-bottom: 1px solid #d5dbe3; padding-bottom: 8px; }
+    .report-body h3 { color: #7c3aed; margin: 16px 0 8px; font-size: 15px; }
+    .report-body table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    .report-body th, .report-body td {
+      padding: 8px 12px;
+      border: 1px solid #d5dbe3;
+      text-align: left;
+      font-size: 13px;
+    }
+    .report-body th { background: #eef0f4; color: #2563eb; font-weight: 600; }
+    .report-body td:first-child { color: #64748b; font-weight: 500; background: #f8f9fa; }
+    .report-body p { margin: 4px 0; line-height: 1.6; }
+    .report-body code {
+      background: #fff3e0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #e65100;
+    }
+    .report-body pre {
+      background: #f8f9fa;
+      border: 1px solid #d5dbe3;
+      border-radius: 6px;
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+
+    /* Actions bar */
+    .actions-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* Reply modal */
+    .reply-section {
+      display: none;
+      margin-top: 16px;
+    }
+    .reply-section.active { display: block; }
+    @keyframes replyFlash {
+      0%   { box-shadow: 0 0 0 3px rgba(37,99,235,0.55); }
+      100% { box-shadow: 0 0 0 3px rgba(37,99,235,0); }
+    }
+    .reply-section.flash { animation: replyFlash 1.2s ease-out; border-radius: 8px; }
+    .reply-content {
+      background: #ffffff;
+      border: 1px solid #d5dbe3;
+      border-radius: 6px;
+      padding: 16px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    /* History */
+    .history-section { margin-top: 32px; }
+    .history-item {
+      background: #f6f7f9;
+      border: 1px solid #d5dbe3;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .history-item:hover { border-color: #3b82f6; }
+    .history-id { color: #2563eb; font-weight: 600; font-size: 14px; }
+    .history-title { color: #2c3e50; font-size: 13px; margin-left: 12px; }
+    .history-meta { color: #64748b; font-size: 12px; }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid #d5dbe3;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Custom confirm modal (replaces native confirm() for nicer styling +
+       real "Proceed"/"Cancel" button labels, which browsers don't allow on
+       the native confirm() dialog). */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      width: 440px;
+      max-width: 90vw;
+      padding: 24px;
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-body {
+      font-size: 14px;
+      color: #334155;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .modal-body .modal-version-row {
+      background: #f6f7f9;
+      border: 1px solid #d5dbe3;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 12px 0;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 13px;
+    }
+    .modal-body ul { margin: 8px 0 0 0; padding-left: 18px; }
+    .modal-body li { margin-bottom: 4px; }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .btn-danger-outline { background: #fff; color: #475569; border: 1px solid #d1d5db; }
+    .btn-danger-outline:hover { background: #f3f4f6; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🤖 Ticket Analyst</h1>
+    <span class="badge">AI-Powered</span>
+  </div>
+
+  <div class="container">
+    <!-- Input -->
+    <div class="input-section">
+      <div class="input-row">
+        <div class="input-group">
+          <label>Ticket ID</label>
+          <input type="text" id="ticketInput" placeholder="Enter ticket ID, e.g. 2745927, FeedbackTicket 2745927: Title, or ADO URL" />
+        </div>
+        <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeTicket()">
+          🔍 Analyze
+        </button>
+      </div>
+
+      <div class="progress" id="progress" style="display:none;">
+        <div class="progress-log" id="progressLog"></div>
+      </div>
+    </div>
+
+    <!-- Report area with sidebar -->
+    <div class="main-layout">
+      <!-- Section Nav Sidebar -->
+      <nav class="section-nav" id="sectionNav">
+        <div class="section-nav-title">Ticket Summary</div>
+      </nav>
+
+      <div class="main-content">
+    <!-- Report -->
+    <div class="report-section" id="reportSection">
+      <div class="report-card">
+        <div class="report-header">
+          <h2 id="reportTitle" style="font-size:14px;">Analysis Report</h2>
+        </div>
+        <div class="report-body" id="reportBody"></div>
+      </div>
+
+      <div class="actions-bar">
+        <button class="btn btn-secondary" onclick="reproduceLive()">🖥️ Reproduce by Copilot (Live)</button>
+        <button class="btn btn-secondary" onclick="generateReply('nmi')">✉️ Need More Info Reply</button>
+        <button class="btn btn-secondary" onclick="generateReply('repro')">✅ Reproduction Successful Reply</button>
+      </div>
+
+      <!-- Reply (shows right after action buttons) -->
+      <div class="reply-section" id="replySection">
+        <div class="report-card">
+          <div class="report-header">
+            <h2 id="replyTitle">Generated Reply</h2>
+            <div style="display:flex; align-items:center; gap:14px;">
+              <label id="removeFlaggedLabel" style="display:none; align-items:center; gap:6px; font-size:12px; color:#475569; user-select:none; cursor:pointer;">
+                <input type="checkbox" id="removeFlaggedCheckbox" onchange="toggleRemoveFlagged()">
+                Remove flagged questions &amp; renumber
+              </label>
+              <button class="btn btn-secondary" id="replyCopyBtn" onclick="copyReply()" disabled style="opacity:0.4;cursor:not-allowed;">📋 Copy</button>
+            </div>
+          </div>
+          <div class="reply-content" id="replyContent"></div>
+        </div>
+        <div class="reply-reminders" id="replyReminders" style="display:none; margin-top:12px; padding:16px; background:#fffbeb; border:1px dashed #f59e0b; border-radius:8px; font-size:13px; line-height:1.7; color:#92400e;"></div>
+      </div>
+
+      <!-- Cross-reference -->
+      <div class="report-card" id="crossRefCard" style="display:none; margin-top: 16px;">
+        <div class="report-header">
+          <h2>Cross-Referenced Analysis</h2>
+        </div>
+        <div class="report-body" id="crossRefBody"></div>
+      </div>
+    </div>
+
+    <!-- History (hidden) -->
+    <div class="history-section" style="display:none;">
+      <h2 style="color: #64748b; font-size: 14px; margin-bottom: 12px;">Recent Analyses</h2>
+      <div id="historyList"></div>
+    </div>
+      </div><!-- /.main-content -->
+    </div><!-- /.main-layout -->
+  </div>
+
+  <!-- Custom "update available" confirm modal (replaces native confirm()) -->
+  <div class="modal-overlay" id="updateModalOverlay">
+    <div class="modal-box">
+      <div class="modal-title">🔄 A newer Visual Studio build is available</div>
+      <div class="modal-body">
+        <div class="modal-version-row">
+          Installed: <strong id="updateModalInstalled">?</strong><br>
+          Latest: <strong id="updateModalLatest">?</strong>
+        </div>
+        <ul>
+          <li><strong>Proceed</strong> — keep reproducing on the current installed build.</li>
+          <li><strong>Cancel</strong> — stop, so you can update VS first, then try again.</li>
+        </ul>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger-outline" id="updateModalCancel">Cancel</button>
+        <button class="btn btn-primary" id="updateModalProceed">Proceed</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom "reply type contradicts repro outcome" confirm modal (replaces native confirm()) -->
+  <div class="modal-overlay" id="mismatchModalOverlay">
+    <div class="modal-box">
+      <div class="modal-title">⚠️ Reply type doesn't match repro outcome</div>
+      <div class="modal-body" id="mismatchModalBody"></div>
+      <div class="modal-actions">
+        <button class="btn btn-danger-outline" id="mismatchModalCancel">Cancel</button>
+        <button class="btn btn-primary" id="mismatchModalProceed">Proceed</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentTicketId = null;
+    let currentReport = '';
+    let currentTitle = '';
+    let currentTicketMeta = null;
+    let reproPollTimer = null;
+    // Outcome ('success'|'failed') reported by the background live-repro job for
+    // currentTicketId, if any — used to warn when the manually-picked reply type
+    // contradicts what Copilot actually observed.
+    let lastReproOutcome = null;
+    // Raw (unfiltered) main reply body text, kept separately from whatever is
+    // currently rendered in #replyContent, so the "Remove flagged questions &
+    // renumber" checkbox can be toggled on/off without losing/re-fetching data.
+    let currentReplyRawMain = '';
+    let currentReplyKind = null; // 'nmi' | 'repro' | 'enhance' | null
+
+    /** Generic Promise<boolean>-returning confirm modal (true = Proceed/OK
+     *  button clicked, false = Cancel button or backdrop clicked). Wires up
+     *  whichever overlay/proceed/cancel element ids are passed in, so the
+     *  same helper drives every custom confirm dialog in this page instead
+     *  of the native confirm() (which can't have custom button labels). */
+    function showConfirmModal(overlayId, proceedId, cancelId) {
+      const overlay = document.getElementById(overlayId);
+      overlay.classList.add('active');
+
+      return new Promise((resolve) => {
+        const proceedBtn = document.getElementById(proceedId);
+        const cancelBtn = document.getElementById(cancelId);
+        const cleanup = (result) => {
+          overlay.classList.remove('active');
+          proceedBtn.removeEventListener('click', onProceed);
+          cancelBtn.removeEventListener('click', onCancel);
+          overlay.removeEventListener('click', onOverlayClick);
+          resolve(result);
+        };
+        const onProceed = () => cleanup(true);
+        const onCancel = () => cleanup(false);
+        const onOverlayClick = (e) => { if (e.target === overlay) cleanup(false); };
+        proceedBtn.addEventListener('click', onProceed);
+        cancelBtn.addEventListener('click', onCancel);
+        overlay.addEventListener('click', onOverlayClick);
+      });
+    }
+
+    /** "Update available" confirm modal — returns Promise<boolean>. */
+    function showUpdateConfirm(installed, latest) {
+      document.getElementById('updateModalInstalled').textContent = installed || '?';
+      document.getElementById('updateModalLatest').textContent = latest || '?';
+      return showConfirmModal('updateModalOverlay', 'updateModalProceed', 'updateModalCancel');
+    }
+
+    /** "Reply type contradicts repro outcome" confirm modal — returns Promise<boolean>. */
+    function showMismatchConfirm(bodyHtml) {
+      document.getElementById('mismatchModalBody').innerHTML = bodyHtml;
+      return showConfirmModal('mismatchModalOverlay', 'mismatchModalProceed', 'mismatchModalCancel');
+    }
+
+    /** Fetch any existing repro job outcome for a ticket (e.g. after a page
+     *  reload, or when switching tickets) so the contradiction warning still
+     *  works even outside the live polling window. */
+    async function refreshReproOutcome(ticketId) {
+      lastReproOutcome = null;
+      try {
+        const resp = await fetch(`/api/copilot/repro-status/${ticketId}`);
+        const job = await resp.json();
+        if (job.status === 'done') lastReproOutcome = job.outcome;
+        return job;
+      } catch (err) {
+        // ignore — non-critical
+      }
+      return null;
+    }
+
+    // --- Active-ticket liveness (tab title + tracker "analyzing" flag) ----------
+    // Keeps the tab title, the URL, and the tracker badge in sync with whichever
+    // ticket this tab is currently analyzing. Invoked on the initial ?ticket= load
+    // AND whenever the user analyzes a different ticket from the search box, so the
+    // previous ticket's title/flag is torn down and the new one is established.
+    const ticketLiveness = (() => {
+      let activeId = null;
+      let hbTimer = null;
+      let releaseLock = null;   // resolves the held Web Lock's promise (releases it)
+      let lockAbort = null;     // aborts a still-pending lock request
+      let listenersBound = false;
+
+      const keyFor = id => 'analyzing:' + id;
+      const beat = () => { if (activeId) { try { localStorage.setItem(keyFor(activeId), String(Date.now())); } catch (e) {} } };
+      const clearBeat = () => { if (activeId) { try { localStorage.removeItem(keyFor(activeId)); } catch (e) {} } };
+
+      function stop() {
+        if (hbTimer) { clearInterval(hbTimer); hbTimer = null; }
+        clearBeat();
+        if (releaseLock) { try { releaseLock(); } catch (e) {} releaseLock = null; }
+        if (lockAbort) { try { lockAbort.abort(); } catch (e) {} lockAbort = null; }
+        activeId = null;
+      }
+
+      function activate(id) {
+        if (!id || id === activeId) return;
+        stop();  // tear down the previous ticket's heartbeat/lock/flag first
+
+        activeId = id;
+        document.title = `Ticket Analyst #${id}`;
+
+        // Keep the URL in sync so a refresh re-analyzes the current ticket.
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('ticket', id);
+          history.replaceState(null, '', url);
+        } catch (e) {}
+
+        // Heartbeat: shared-localStorage timestamp the tracker tab can read.
+        beat();
+        hbTimer = setInterval(beat, 2000);
+
+        if (!listenersBound) {
+          document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
+          window.addEventListener('focus', beat);
+          window.addEventListener('pagehide', clearBeat);
+          window.addEventListener('beforeunload', clearBeat);
+          listenersBound = true;
+        }
+
+        // Authoritative liveness signal: hold a Web Lock named "analyzing:<id>"
+        // for as long as this ticket is active; the browser releases it the moment
+        // the tab closes/crashes, and we release it explicitly when switching tickets.
+        try {
+          if (navigator.locks && navigator.locks.request) {
+            lockAbort = new AbortController();
+            navigator.locks.request(keyFor(id), { mode: 'shared', signal: lockAbort.signal }, () =>
+              new Promise(resolve => { releaseLock = resolve; })
+            ).catch(() => {}); // AbortError on ticket switch is expected
+          }
+        } catch (e) {}
+      }
+
+      return { activate };
+    })();
+
+    // Markdown-to-HTML converter
+    function md(text) {
+      if (!text) return '';
+
+      // Escape HTML
+      text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      // Extract code blocks into placeholders (before table processing)
+      const codeBlocks = [];
+      text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+        const idx = codeBlocks.length;
+        codeBlocks.push('<pre><code>' + code + '</code></pre>');
+        return `\n%%CODEBLOCK_${idx}%%\n`;
+      });
+
+      // Horizontal rules — remove lines that are just dashes
+      text = text.replace(/^-{3,}$/gm, '');
+
+      // Process line by line to handle tables properly
+      const lines = text.split('\n');
+      let html = '';
+      let inTable = false;
+      let isFirstRow = true;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trimEnd();
+
+        // Code block placeholder — close table first if open, then insert
+        const cbMatch = line.trim().match(/^%%CODEBLOCK_(\d+)%%$/);
+        if (cbMatch) {
+          if (inTable) { html += '</table>'; inTable = false; isFirstRow = true; }
+          html += codeBlocks[parseInt(cbMatch[1])];
+          continue;
+        }
+
+        // Table separator row (e.g. |---|---|, |:---:|---:|) — skip
+        if (/^\|[\s\-:|]+\|$/.test(line.trim())) {
+          const cells = line.split('|').slice(1, -1);
+          if (cells.length > 0 && cells.every(c => /^[\s\-:]+$/.test(c))) {
+            continue;
+          }
+        }
+
+        // Table data row
+        if (/^\|.+\|$/.test(line.trim())) {
+          if (!inTable) {
+            html += '<table>';
+            inTable = true;
+            isFirstRow = true;
+          }
+          const cells = line.split('|').slice(1, -1);
+          if (isFirstRow) {
+            html += '<tr>' + cells.map(c => `<th>${c.trim()}</th>`).join('') + '</tr>';
+            isFirstRow = false;
+          } else {
+            html += '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+          }
+          continue;
+        }
+
+        // Not a table row — close table if open
+        if (inTable) {
+          html += '</table>';
+          inTable = false;
+          isFirstRow = true;
+        }
+
+        // Headings — add id for anchor navigation
+        if (/^## .+/.test(line)) {
+          const title = line.replace(/^## /, '');
+          const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+          html += `<h2 id="section-${slug}">${title}</h2>`;
+        } else if (/^### .+/.test(line)) {
+          html += '<h3>' + line.replace(/^### /, '') + '</h3>';
+        } else if (/^- \*\*.+\*\*/.test(line)) {
+          html += '<p>' + line.replace(/^- /, '• ') + '</p>';
+        } else if (/^- /.test(line)) {
+          html += '<p style="padding-left:16px;">' + line.replace(/^- /, '• ') + '</p>';
+        } else if (line.trim() === '') {
+          // Skip excessive blank lines
+        } else {
+          html += '<p>' + line + '</p>';
+        }
+      }
+      if (inTable) html += '</table>';
+
+      // Inline formatting
+      html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+      // Markdown links: [text](url)
+      html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">$1</a>');
+
+      // Bare URLs (not already inside href or >)
+      html = html.replace(/(?<!href="|">)(https?:\/\/[^\s<"']+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">$1</a>');
+
+      return html;
+    }
+
+    /** Build ticket summary table client-side */
+    function buildTicketSummary(meta) {
+      if (!meta) return '';
+      const link = meta.devComLink
+        ? `<a href="${meta.devComLink}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">${meta.devComLink}</a>`
+        : '—';
+      return `<h2 id="section-ticket-information">Ticket Information</h2>
+        <table>
+          <tr><th style="width:150px;">Field</th><th>Value</th></tr>
+          <tr><td>ID</td><td>${meta.id}</td></tr>
+          <tr><td>Title</td><td>${meta.title || '—'}</td></tr>
+          <tr><td>State</td><td><strong>${meta.state || '—'}</strong></td></tr>
+          <tr><td>Area Path</td><td>${meta.areaPath || '—'}</td></tr>
+          <tr><td>Product</td><td>${meta.product || '—'}</td></tr>
+          <tr><td>Version</td><td>${meta.productVersion || '—'}</td></tr>
+          <tr><td>Website Link</td><td>${link}</td></tr>
+        </table>`;
+    }
+
+    /** Build attachments inventory table — always shows all categories */
+    function buildAttachmentsTable(attachments) {
+      const categories = [
+        { type: '🖼️ Image', icon: '🖼️', label: 'Image', exts: 'png, jpg, jpeg, gif, bmp, svg' },
+        { type: '🎥 Video', icon: '🎥', label: 'Video', exts: 'mp4, avi, mov, wmv, webm' },
+        { type: '🔍 ETL/Dump', icon: '🔍', label: 'ETL/Dump File', exts: 'etl, dmp, dump, cab (incl. .etl.zip, .dmp.zip)' },
+        { type: '📦 Archive', icon: '📦', label: 'Archive', exts: 'zip, 7z, rar, tar, gz' },
+        { type: '📄 Log/Config', icon: '📄', label: 'Log/Config', exts: 'log, txt, xml, json, ini, csv' },
+        { type: '📄 Other', icon: '📄', label: 'Other', exts: 'any other extension' },
+      ];
+
+      let rows = '';
+      const used = new Set();
+      const linkify = (a) => a.url
+        ? `<a href="${a.url}" target="_blank" rel="noopener">${a.name}</a>`
+        : a.name;
+      const typeCell = (cat) =>
+        `${cat.icon} ${cat.label}<br><span style="color:#9ca3af;font-size:0.8em;">${cat.exts}</span>`;
+
+      for (const cat of categories) {
+        const matches = attachments.filter(a => a.type === cat.type);
+        if (matches.length > 0) {
+          const names = matches.map(m => { used.add(m.name); return linkify(m); }).join('<br>');
+          rows += `<tr><td>${typeCell(cat)}</td><td>${names}</td></tr>`;
+        } else {
+          rows += `<tr><td>${typeCell(cat)}</td><td style="color:#9ca3af;">—</td></tr>`;
+        }
+      }
+
+      const leftovers = attachments.filter(a => !used.has(a.name)).map(a => linkify(a));
+      if (leftovers.length > 0) {
+        rows += `<tr><td>📄 Other<br><span style="color:#9ca3af;font-size:0.8em;">any other extension</span></td><td>${leftovers.join('<br>')}</td></tr>`;
+      }
+
+      return `<h2 id="section-attachments-inventory">Attachments Inventory</h2>
+        <table>
+          <tr><th>Type</th><th>Filename</th></tr>
+          ${rows}
+        </table>`;
+    }
+
+    /** Extract ticket ID from various input formats */
+    function extractTicketId(input) {
+      if (!input) return null;
+      input = input.trim();
+
+      // Pure number
+      if (/^\d{5,7}$/.test(input)) return parseInt(input);
+
+      // FeedbackTicket 3021479 or FeedbackTicket 3021479: Title...
+      let m = input.match(/(?:FeedbackTicket|ticket|ado|Bug|Task)\s+(\d{5,7})/i);
+      if (m) return parseInt(m[1]);
+
+      // ADO URL: _workitems/edit/3021479
+      m = input.match(/_workitems\/edit\/(\d+)/);
+      if (m) return parseInt(m[1]);
+
+      // DevCom URL: /t/slug/3021479
+      m = input.match(/\/t\/[^/]+\/(\d+)/);
+      if (m) return parseInt(m[1]);
+
+      // #3021479
+      m = input.match(/#(\d{5,7})\b/);
+      if (m) return parseInt(m[1]);
+
+      // Last resort: find the first 5-7 digit number
+      m = input.match(/\b(\d{5,7})\b/);
+      if (m) return parseInt(m[1]);
+
+      return null;
+    }
+
+    /** Build section nav sidebar from h2 headings in the report */
+    function buildSectionNav() {
+      const nav = document.getElementById('sectionNav');
+      const headings = document.querySelectorAll('#reportBody h2[id]');
+      // Clear old links (keep title)
+      nav.querySelectorAll('a').forEach(a => a.remove());
+
+      if (headings.length === 0) {
+        nav.classList.remove('active');
+        return;
+      }
+
+      headings.forEach(h => {
+        const a = document.createElement('a');
+        a.href = '#' + h.id;
+        a.textContent = h.textContent;
+        a.title = h.textContent;
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          nav.querySelectorAll('a').forEach(x => x.classList.remove('active'));
+          a.classList.add('active');
+        });
+        nav.appendChild(a);
+      });
+
+      nav.classList.add('active');
+
+      // Persistent "Output" link — jumps to the generated-reply panel, which
+      // renders below the action buttons and is easy to miss.
+      const outLink = document.createElement('a');
+      outLink.href = '#replySection';
+      outLink.textContent = '✉️ Output';
+      outLink.title = 'Generated reply output';
+      outLink.addEventListener('click', e => {
+        e.preventDefault();
+        const rs = document.getElementById('replySection');
+        rs.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        nav.querySelectorAll('a').forEach(x => x.classList.remove('active'));
+        outLink.classList.add('active');
+      });
+      nav.appendChild(outLink);
+
+      // Scroll-based highlight: find the topmost heading that's scrolled past
+      const updateActiveOnScroll = () => {
+        const scrollY = window.scrollY + 100; // offset for header
+        let current = null;
+        headings.forEach(h => {
+          if (h.offsetTop <= scrollY) current = h.id;
+        });
+        nav.querySelectorAll('a').forEach(a => {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + (current || headings[0]?.id));
+        });
+      };
+
+      window.removeEventListener('scroll', window._navScrollHandler);
+      window._navScrollHandler = updateActiveOnScroll;
+      window.addEventListener('scroll', updateActiveOnScroll, { passive: true });
+      updateActiveOnScroll();
+    }
+
+    async function analyzeTicket() {
+      const input = document.getElementById('ticketInput').value.trim();
+      const id = extractTicketId(input);
+      if (!id) return alert('Could not extract a ticket ID. Enter a number like 2745927, or paste "FeedbackTicket 3021479: Title"');
+
+      currentTicketId = id;
+      // Sync tab title, URL, and the tracker "analyzing" flag to this ticket.
+      ticketLiveness.activate(id);
+
+      const btn = document.getElementById('analyzeBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+
+      const progress = document.getElementById('progress');
+      const progressLog = document.getElementById('progressLog');
+      progress.style.display = 'block';
+      progressLog.innerHTML = '<div class="step">Starting analysis...</div>';
+
+      document.getElementById('reportSection').classList.remove('active');
+      document.getElementById('replySection').classList.remove('active');
+
+      try {
+        const resp = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticketId: id }),
+        });
+        const data = await resp.json();
+
+        if (data.logs) {
+          progressLog.innerHTML = data.logs
+            .map(l => `<div class="step">${l.message}</div>`)
+            .join('');
+        }
+
+        if (data.error) {
+          progressLog.innerHTML += `<div class="step" style="color:#dc2626">❌ ${data.error}</div>`;
+          return;
+        }
+
+        currentReport = data.report;
+        currentTitle = data.title || '';
+        currentTicketMeta = data.ticketMeta || null;
+        const reproJob = await refreshReproOutcome(id);
+        // Hide progress log once report is ready
+        progress.style.display = 'none';
+        document.getElementById('reportTitle').innerHTML = `Analysis :<br><span style="font-size:13px;color:#64748b;">#${id}</span> — ${data.title || ''}`;
+
+        // Strip LLM-generated Ticket Summary section (we render it client-side)
+        let llmReport = data.report;
+        // Remove ## Ticket Summary and everything until the next ## heading
+        llmReport = llmReport.replace(/## Ticket Summary[\s\S]*?(?=\n## |$)/, '');
+        // Also remove any ## Attachments Inventory the LLM may have generated
+        llmReport = llmReport.replace(/## Attachments Inventory[\s\S]*?(?=\n## |$)/, '');
+
+        // Build client-side sections + LLM analysis
+        const summaryHtml = buildTicketSummary(data.ticketMeta);
+        const attachmentsHtml = buildAttachmentsTable(data.attachments || []);
+        const analysisHtml = md(llmReport.trim());
+
+        document.getElementById('reportBody').innerHTML = summaryHtml + attachmentsHtml + analysisHtml;
+        document.getElementById('reportSection').classList.add('active');
+        buildSectionNav();
+        if (reproJob && reproJob.status === 'done') {
+          // A background live-repro already finished for this ticket (e.g. before
+          // this tab was opened/reloaded) — render its cached reply instead of
+          // wiping it with the "no reply yet" placeholder.
+          document.getElementById('replySection').classList.add('active');
+          renderAutoReply(reproJob, id);
+        } else if (reproJob && (reproJob.status === 'error' || reproJob.status === 'stale')) {
+          // Same idea, but the persisted job ended in failure — surface that
+          // instead of a silent empty placeholder, matching the live-poll view.
+          const replySection = document.getElementById('replySection');
+          const replyContent = document.getElementById('replyContent');
+          const replyTitle = document.getElementById('replyTitle');
+          replySection.classList.add('active');
+          document.getElementById('replyReminders').style.display = 'none';
+          replyTitle.textContent = 'Live Reproduction — no result';
+          replyContent.textContent = reproJob.status === 'stale'
+            ? '⚠️ No result was received from the background repro after 20 minutes. Check the hidden CLI process/log, or retry.'
+            : `⚠️ Repro callback failed: ${reproJob.error || 'unknown error'}`;
+          const copyBtn = document.getElementById('replyCopyBtn');
+          copyBtn.disabled = true;
+          copyBtn.style.opacity = '0.4';
+          copyBtn.style.cursor = 'not-allowed';
+        } else {
+          resetReplyPlaceholder();
+        }
+
+        if (data.crossRefAnalysis) {
+          document.getElementById('crossRefBody').innerHTML = md(data.crossRefAnalysis);
+          document.getElementById('crossRefCard').style.display = 'block';
+        } else {
+          document.getElementById('crossRefCard').style.display = 'none';
+        }
+
+        loadHistory();
+      } catch (err) {
+        progressLog.innerHTML += `<div class="step" style="color:#dc2626">❌ ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🔍 Analyze';
+      }
+    }
+
+    async function reproduceLive() {
+      if (!currentTicketId) {
+        alert('Analyze a ticket first, then start the live reproduction.');
+        return;
+      }
+      if (!currentReport || !currentReport.trim()) {
+        alert('No analysis available yet. Run "Analyze" first so the reproduction steps can be sent to Copilot.');
+        return;
+      }
+      const btn = event.target;
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '⏳ Resolving VS environment...';
+
+      const doPost = async (proceedWithUpdate) => {
+        const resp = await fetch('/api/copilot/repro', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ticketId: currentTicketId,
+            report: currentReport,
+            title: currentTitle,
+            ticketMeta: currentTicketMeta,
+            proceedWithUpdate: !!proceedWithUpdate,
+          }),
+        });
+        return resp;
+      };
+
+      try {
+        let resp = await doPost(false);
+
+        // §6 blocking condition: a newer VS build is available.
+        if (resp.status === 409) {
+          const data = await resp.json();
+          const u = (data.prep && data.prep.update) || {};
+          const proceed = await showUpdateConfirm(u.installed, u.latest);
+          if (!proceed) {
+            btn.textContent = original;
+            btn.disabled = false;
+            return;
+          }
+          btn.textContent = '⏳ Launching VS + Copilot...';
+          resp = await doPost(true);
+        }
+
+        // §6 precondition: no VS installed locally.
+        if (resp.status === 422) {
+          const data = await resp.json();
+          alert(data.message || 'No Visual Studio installation found on this machine — a live reproduction requires VS installed locally.');
+          btn.textContent = original;
+          btn.disabled = false;
+          return;
+        }
+
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || data.message || `HTTP ${resp.status}`);
+
+        let msg = '✅ Live repro started';
+        if (data.vs) {
+          msg = `✅ ${data.vs.edition} ${data.vs.year} ${data.vs.channel} (${data.vs.build})`;
+        }
+        btn.textContent = msg;
+        setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 4000);
+
+        // The CLI now runs headless in the background and will call back to
+        // /api/copilot/repro-callback with its result when the repro finishes —
+        // start polling so the reply auto-appears without opening any window
+        // or clicking a reply button by hand.
+        startReproStatusPolling(currentTicketId);
+      } catch (err) {
+        alert(`Failed to start live reproduction: ${err.message}`);
+        btn.textContent = original;
+        btn.disabled = false;
+      }
+    }
+
+    /** Poll the background live-repro job and auto-render the reply when the
+     *  headless Copilot CLI reports it's done — no manual button click needed. */
+    function startReproStatusPolling(ticketId) {
+      if (reproPollTimer) clearInterval(reproPollTimer);
+
+      const replySection = document.getElementById('replySection');
+      const replyContent = document.getElementById('replyContent');
+      const replyTitle = document.getElementById('replyTitle');
+      replyTitle.textContent = 'Live Reproduction Running (background)...';
+      replyContent.textContent =
+        '🤖 Copilot is reproducing this ticket in the background.\n' +
+        'A full-screen PowerShell window was opened so you can watch the live session (screenshots, actions, thoughts) as it happens.\n' +
+        'This panel will auto-update with the drafted reply as soon as it finishes.';
+      replySection.classList.add('active');
+      document.getElementById('replyReminders').style.display = 'none';
+
+      reproPollTimer = setInterval(async () => {
+        if (String(ticketId) !== String(currentTicketId)) {
+          clearInterval(reproPollTimer);
+          reproPollTimer = null;
+          return;
+        }
+        try {
+          const resp = await fetch(`/api/copilot/repro-status/${ticketId}`);
+          const job = await resp.json();
+
+          if (job.status === 'done') {
+            clearInterval(reproPollTimer);
+            reproPollTimer = null;
+            lastReproOutcome = job.outcome;
+            renderAutoReply(job, ticketId);
+          } else if (job.status === 'error' || job.status === 'stale') {
+            clearInterval(reproPollTimer);
+            reproPollTimer = null;
+            replyTitle.textContent = 'Live Reproduction — no result';
+            replyContent.textContent = job.status === 'stale'
+              ? '⚠️ No result was received from the background repro after 20 minutes. Check the hidden CLI process/log, or retry.'
+              : `⚠️ Repro callback failed: ${job.error || 'unknown error'}`;
+          }
+          // status === 'running' -> keep polling silently
+        } catch (err) {
+          // transient fetch error — keep polling, don't spam the UI
+        }
+      }, 5000);
+    }
+
+    /** Render a reply that the headless CLI produced itself, exactly as if the
+     *  user had clicked "Reproduction Successful Reply" / "Need More Info Reply". */
+    function renderAutoReply(job, ticketId) {
+      const replySection = document.getElementById('replySection');
+      const replyContent = document.getElementById('replyContent');
+      const replyTitle = document.getElementById('replyTitle');
+      const copyBtn = document.getElementById('replyCopyBtn');
+
+      const REPLY_LABELS = { repro: 'Reproduction Successful', nmi: 'Need More Info' };
+      const replyLabel = REPLY_LABELS[job.replyType] || job.replyType;
+      replyTitle.textContent = `${replyLabel} Reply — #${ticketId} (auto-generated by background repro)`;
+
+      let cleanReply = (job.reply || '')
+        .replace(/^```\w*\n?/gm, '')
+        .replace(/\n?```$/gm, '')
+        .trim();
+
+      const remindersDiv = document.getElementById('replyReminders');
+      if (job.replyType === 'repro') {
+        replyContent.textContent = cleanReply;
+        if (remindersDiv) remindersDiv.style.display = 'none';
+        setupRemoveFlaggedControl('repro', cleanReply);
+      } else {
+        const separatorIdx = cleanReply.indexOf('----------------------------------------------------------');
+        if (separatorIdx > -1) {
+          const mainReply = cleanReply.substring(0, separatorIdx).trim();
+          replyContent.textContent = mainReply;
+          remindersDiv.innerHTML = cleanReply.substring(separatorIdx + 58).trim().replace(/\n/g, '<br>');
+          remindersDiv.style.display = 'block';
+          setupRemoveFlaggedControl(job.replyType, mainReply);
+        } else {
+          replyContent.textContent = cleanReply;
+          remindersDiv.style.display = 'none';
+          setupRemoveFlaggedControl(job.replyType, cleanReply);
+        }
+      }
+
+      copyBtn.disabled = false;
+      copyBtn.style.opacity = '1';
+      copyBtn.style.cursor = 'pointer';
+
+      replySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      replySection.classList.remove('flash');
+      void replySection.offsetWidth;
+      replySection.classList.add('flash');
+    }
+
+    /** Show the reply panel with a neutral default message (no reply yet). */
+    function resetReplyPlaceholder() {
+      const replySection = document.getElementById('replySection');
+      const replyContent = document.getElementById('replyContent');
+      const replyTitle = document.getElementById('replyTitle');
+      replyTitle.textContent = 'Output — Generated Reply';
+      replyContent.textContent =
+        'No reply generated yet.\n\n' +
+        'Click “✉️ Need More Info Reply” or “✅ Reproduction Successful Reply” above, ' +
+        'and the generated reply will appear here.';
+      const remindersDiv = document.getElementById('replyReminders');
+      if (remindersDiv) remindersDiv.style.display = 'none';
+      const copyBtn = document.getElementById('replyCopyBtn');
+      copyBtn.disabled = true;
+      copyBtn.style.opacity = '0.4';
+      copyBtn.style.cursor = 'not-allowed';
+      const label = document.getElementById('removeFlaggedLabel');
+      if (label) label.style.display = 'none';
+      replySection.classList.add('active');
+    }
+
+    async function generateReply(type) {
+      if (!currentTicketId) return;
+
+      // Warn if the manually-picked reply type contradicts what the background
+      // live-repro actually observed (e.g. picking "Need More Info" after
+      // Copilot already reproduced it successfully, or vice versa).
+      if (type === 'nmi' && lastReproOutcome === 'success') {
+        const proceed = await showMismatchConfirm(
+          `⚠️ The background live reproduction for #${currentTicketId} already <strong>SUCCEEDED</strong>.<br><br>` +
+          `Generating a "Need More Info" reply now would contradict that result.`
+        );
+        if (!proceed) return;
+      } else if (type === 'repro' && lastReproOutcome === 'failed') {
+        const proceed = await showMismatchConfirm(
+          `⚠️ The background live reproduction for #${currentTicketId} could <strong>NOT</strong> reproduce the issue.<br><br>` +
+          `Generating a "Reproduction Successful" reply now would contradict that result.`
+        );
+        if (!proceed) return;
+      }
+
+      const replySection = document.getElementById('replySection');
+      const replyContent = document.getElementById('replyContent');
+      const replyTitle = document.getElementById('replyTitle');
+
+      const REPLY_LABELS = { nmi: 'Need More Info', repro: 'Reproduction Successful', enhance: 'Enhanced' };
+      const replyLabel = REPLY_LABELS[type] || type;
+
+      replyTitle.textContent = `Generating ${replyLabel} reply...`;
+      replyContent.textContent = 'Please wait...';
+      replySection.classList.add('active');
+      // Bring the reply panel into view so the user sees output being generated
+      // (it renders below the action buttons, often off-screen).
+      replySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('replyReminders').style.display = 'none';
+      const copyBtn = document.getElementById('replyCopyBtn');
+      copyBtn.disabled = true;
+      copyBtn.style.opacity = '0.4';
+      copyBtn.style.cursor = 'not-allowed';
+
+      try {
+        const resp = await fetch('/api/reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticketId: currentTicketId, type }),
+        });
+        const data = await resp.json();
+
+        if (data.error) {
+          replyContent.textContent = `Error: ${data.error}`;
+          return;
+        }
+
+        replyTitle.textContent = `${replyLabel} Reply — #${currentTicketId}`;
+        copyBtn.disabled = false;
+        copyBtn.style.opacity = '1';
+        copyBtn.style.cursor = 'pointer';
+
+        // Split reply at "------" separator — copyable part vs reminders
+        const rawReply = data.reply || '';
+        // Strip code block markers and language labels if present
+        let cleanReply = rawReply
+          .replace(/^```\w*\n?/gm, '')
+          .replace(/\n?```$/gm, '')
+          .trim();
+
+        const remindersDiv = document.getElementById('replyReminders');
+
+        if (type === 'repro') {
+          // Repro replies use the ----- line as an in-body separator between the
+          // "To User" and "To Developer" parts — keep everything in one copyable box.
+          replyContent.textContent = cleanReply;
+          if (remindersDiv) remindersDiv.style.display = 'none';
+          setupRemoveFlaggedControl(type, cleanReply);
+        } else {
+          // NMI replies use the ----- line to split the reply from the ⚠️ review section.
+          const separatorIdx = cleanReply.indexOf('----------------------------------------------------------');
+          if (separatorIdx > -1) {
+            const mainReply = cleanReply.substring(0, separatorIdx).trim();
+            const reminders = cleanReply.substring(separatorIdx + 58).trim();
+            replyContent.textContent = mainReply;
+            remindersDiv.innerHTML = reminders.replace(/\n/g, '<br>');
+            remindersDiv.style.display = 'block';
+            setupRemoveFlaggedControl(type, mainReply);
+          } else {
+            replyContent.textContent = cleanReply;
+            remindersDiv.style.display = 'none';
+            setupRemoveFlaggedControl(type, cleanReply);
+          }
+        }
+      } catch (err) {
+        replyContent.textContent = `Error: ${err.message}`;
+      } finally {
+        // Draw attention to the freshly rendered reply: re-scroll to it and
+        // play a brief highlight flash so the user notices the output below.
+        replySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        replySection.classList.remove('flash');
+        void replySection.offsetWidth; // restart the animation
+        replySection.classList.add('flash');
+      }
+    }
+
+    function copyReport() {
+      navigator.clipboard.writeText(currentReport).then(() => {
+        const btn = event.target;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
+      });
+    }
+
+    function copyReply() {
+      const btn = document.getElementById('replyCopyBtn');
+      if (btn.disabled) return;
+      const text = document.getElementById('replyContent').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
+      });
+    }
+
+    /** Remove any ❗-flagged numbered questions from the "can you help to
+     *  confirm several questions?" list (and 🔍 optional block) in an NMI/
+     *  enhanced reply, then renumber everything that remains sequentially.
+     *  Non-question text (greeting, repro steps, closing line, etc.) is left
+     *  untouched. Safe no-op if the anchor phrase isn't found (e.g. a repro
+     *  reply, which has no such question list). */
+    function stripFlaggedAndRenumber(text) {
+      // Anchor on the fixed intro sentence so we never mistake the earlier
+      // numbered REPRODUCTION STEPS list (e.g. "1. File > New > Project...")
+      // for the 9-question list further down.
+      const anchor = 'confirm several questions?';
+      const anchorIdx = text.indexOf(anchor);
+      if (anchorIdx === -1) return text;
+
+      const head = text.slice(0, anchorIdx + anchor.length);
+      const tail = text.slice(anchorIdx + anchor.length);
+      const lines = tail.split('\n');
+
+      let i = 0;
+      while (i < lines.length && !/^❗?\s*\d+\.\s/.test(lines[i])) i++;
+      if (i >= lines.length) return text; // no numbered list found after the anchor
+
+      const startIdx = i;
+      const mainItems = [];
+      let cur = null;
+      while (i < lines.length) {
+        const line = lines[i];
+        if (/^❗?\s*\d+\.\s/.test(line)) {
+          if (cur) mainItems.push(cur);
+          cur = { flagged: line.trim().startsWith('❗'), lines: [line.replace(/^❗?\s*\d+\.\s*/, '')] };
+          i++;
+        } else if (line.trim() === '') {
+          break; // blank line ends the main numbered list
+        } else {
+          cur.lines.push(line);
+          i++;
+        }
+      }
+      if (cur) mainItems.push(cur);
+      const mainEndIdx = i;
+
+      // Look for an optional (🔍) block between the main list and the closing text.
+      let optStartIdx = -1;
+      for (let j = mainEndIdx; j < lines.length; j++) {
+        const t = lines[j].trim();
+        if (t === '-Optional-') { optStartIdx = j; break; }
+        if (t.startsWith('**(')) break; // hit the closing paragraph — no optional block
+      }
+
+      let optItems = [];
+      let optEndIdx = mainEndIdx;
+      if (optStartIdx > -1) {
+        let k = optStartIdx + 1;
+        let curOpt = null;
+        while (k < lines.length) {
+          const line = lines[k];
+          if (/^🔍\s*\d+\.\s/.test(line)) {
+            if (curOpt) optItems.push(curOpt);
+            curOpt = { lines: [line.replace(/^🔍\s*\d+\.\s*/, '')] };
+            k++;
+          } else if (line.trim() === '') {
+            break;
+          } else {
+            curOpt.lines.push(line);
+            k++;
+          }
+        }
+        if (curOpt) optItems.push(curOpt);
+        optEndIdx = k;
+      }
+
+      const keptMain = mainItems.filter((it) => !it.flagged);
+      let num = 1;
+      const outLines = [...lines.slice(0, startIdx)];
+      keptMain.forEach((it) => {
+        outLines.push(`${num++}. ${it.lines[0]}`);
+        outLines.push(...it.lines.slice(1));
+      });
+
+      if (optItems.length) {
+        outLines.push('', '-Optional-');
+        optItems.forEach((it) => {
+          outLines.push(`🔍 ${num++}. ${it.lines[0]}`);
+          outLines.push(...it.lines.slice(1));
+        });
+      }
+
+      outLines.push(...lines.slice(optStartIdx > -1 ? optEndIdx : mainEndIdx));
+      return head + outLines.join('\n');
+    }
+
+    /** Re-render #replyContent from the stored raw reply, applying the
+     *  flag-removal filter if the checkbox is checked. */
+    function toggleRemoveFlagged() {
+      const replyContent = document.getElementById('replyContent');
+      const checked = document.getElementById('removeFlaggedCheckbox').checked;
+      replyContent.textContent = checked
+        ? stripFlaggedAndRenumber(currentReplyRawMain)
+        : currentReplyRawMain;
+    }
+
+    /** Show/hide + reset the "Remove flagged questions" checkbox for the reply
+     *  kind just rendered — only nmi/enhance replies have a numbered question
+     *  list; repro replies don't, so the control is hidden for those. */
+    function setupRemoveFlaggedControl(kind, mainText) {
+      currentReplyRawMain = mainText;
+      currentReplyKind = kind;
+      const label = document.getElementById('removeFlaggedLabel');
+      const checkbox = document.getElementById('removeFlaggedCheckbox');
+      checkbox.checked = false;
+      if (kind === 'nmi' || kind === 'enhance') {
+        label.style.display = 'flex';
+      } else {
+        label.style.display = 'none';
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        const resp = await fetch('/api/history');
+        const data = await resp.json();
+        const list = document.getElementById('historyList');
+
+        if (!data.analyses || data.analyses.length === 0) {
+          list.innerHTML = '<div style="color:#9ca3af; font-size:13px; padding:8px;">No analyses yet. Enter a ticket ID above to get started.</div>';
+          return;
+        }
+
+        // Deduplicate — show only latest per ticket_id
+        const seen = new Set();
+        const unique = data.analyses.filter(a => {
+          if (seen.has(a.ticket_id)) return false;
+          seen.add(a.ticket_id);
+          return true;
+        });
+
+        list.innerHTML = unique.map(a => `
+          <div class="history-item" onclick="document.getElementById('ticketInput').value='${a.ticket_id}'; analyzeTicket();">
+            <div>
+              <span class="history-id">#${a.ticket_id}</span>
+              <span class="history-title">${a.title || ''}</span>
+            </div>
+            <span class="history-meta">${a.state || ''} · ${a.timestamp || ''}</span>
+          </div>
+        `).join('');
+      } catch (err) {
+        // Silently fail on history load
+      }
+    }
+
+    // Enter key triggers analysis
+    document.getElementById('ticketInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') analyzeTicket();
+    });
+
+    // Load history on page load
+    loadHistory();
+
+    // Auto-analyze if ?ticket=ID is in the URL
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const ticketParam = params.get('ticket');
+      if (ticketParam) {
+        document.getElementById('ticketInput').value = ticketParam;
+        // Establish title + tracker "analyzing" flag immediately; analyzeTicket()
+        // re-affirms it (and switches it if the user later analyzes another ticket).
+        ticketLiveness.activate(ticketParam);
+        // Small delay to let page fully render
+        setTimeout(() => analyzeTicket(), 300);
+      }
+    })();
+  </script>
+</body>
+</html>
