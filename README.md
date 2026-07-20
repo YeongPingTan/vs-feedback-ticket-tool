@@ -42,6 +42,42 @@ backup/                 Daily ticket backups — created at runtime, not committ
 
 See `SETUP-GUIDE.md` for a step-by-step walkthrough and `TECHNICAL-OVERVIEW.md` for architecture details.
 
+## Copilot Prompts
+
+Use these prompts in GitHub Copilot Chat (VS Code or github.com) while working on this repo:
+
+### Understand the codebase
+```
+Explain how a ticket flows from the ADO API through the orchestrator to the UI in this app.
+```
+```
+What does lib/devdiv.js do and how does it identify which comments belong to the team vs the customer?
+```
+
+### Make changes
+```
+Add a new Express route in app.js that returns the 10 most recently updated tickets from the local store.
+```
+```
+Refactor the LLM call in lib/llm-client.js to support a configurable system prompt passed as a parameter.
+```
+
+### Debug / investigate
+```
+Why might the app throw on startup when config.json is missing? Walk me through the startup path.
+```
+```
+The ADO client is returning 401. What environment variables or login state should I check first?
+```
+
+### AI / agent work
+```
+Write a new orchestrator action that summarizes all open tickets by priority and returns a markdown report.
+```
+```
+Extend the agent in lib/orchestrator.js to detect if a ticket has had no reply in 7+ days and flag it.
+```
+
 ## Notes
 - `config.json`, `data/`, and `backup/` are git-ignored since they contain personal identity info and real ticket content.
 - This repo contains only the application source — screenshots, repro artifacts, and diagnostic dumps generated during use are excluded.
