@@ -320,9 +320,32 @@
     }
     .btn-danger-outline { background: #fff; color: #475569; border: 1px solid #d1d5db; }
     .btn-danger-outline:hover { background: #f3f4f6; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #f4f5f7;
+      color: #1e293b;
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: 1px solid #3b82f6;
+      font-size: 0.9rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
+  <div id="toast" class="toast"></div>
   <div class="header">
     <h1>🤖 Ticket Analyst</h1>
     <span class="badge">AI-Powered</span>
@@ -1230,13 +1253,21 @@
       }
     }
 
+    // Show a brief bottom-right toast notification (mirrors script.js's showToast on the main dashboard)
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'toast show';
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => { toast.className = 'toast'; }, 2000);
+    }
+
     function copyReply() {
       const btn = document.getElementById('replyCopyBtn');
       if (btn.disabled) return;
       const text = document.getElementById('replyContent').textContent;
       navigator.clipboard.writeText(text).then(() => {
-        btn.textContent = '✅ Copied!';
-        setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
+        showToast('✅ Copied!');
       });
     }
 
