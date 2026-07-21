@@ -496,6 +496,10 @@ async function importTickets(e) {
     await loadTickets();
     loadDashboard();
     loadBacklog();
+    // Import is applied immediately (no separate save step), so close the
+    // Settings modal automatically to avoid confusing the user about
+    // whether they still need to click "Save Settings".
+    closeSettings();
   } catch (err) {
     showToast(`❌ Import failed: ${err.message}`, 'warn');
   } finally {
@@ -723,10 +727,9 @@ function isBacklog(ticket) {
   if (ticket.month === curMonth && ticket.week >= curWeek) return false;
   const ann = ticket.annotations || {};
   const hasReproStatus = ann.reproStatus && ann.reproStatus !== '';
-  const hasAction = Array.isArray(ann.actionSuggested) ? ann.actionSuggested.length > 0 : (ann.actionSuggested && ann.actionSuggested !== '');
   const hasNotes = ann.notes && ann.notes.trim() !== '';
   const hasReplied = ticket.lastReplyBy === 'me';
-  return !hasReplied && !hasReproStatus && !hasAction && !hasNotes;
+  return !hasReplied && !hasReproStatus && !hasNotes;
 }
 
 async function removeTicket(id) {
@@ -770,20 +773,6 @@ async function updateAnnotation(id, field, value) {
       renderTickets();
     }
     loadBacklog();
-  } catch (e) {
-    showToast('Error saving');
-  }
-}
-
-// Save annotation to server only (no re-render) — used by multi-select to keep dropdown open
-async function saveAnnotation(id, field, value) {
-  try {
-    const res = await fetch(`${API}/tickets/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ annotations: { [field]: value } })
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
   } catch (e) {
     showToast('Error saving');
   }
@@ -867,22 +856,11 @@ function renderTicketCard(ticket) {
           <label>Reproduction Status</label>
           <select onchange="updateAnnotation('${ticket.id}','reproStatus',this.value)">
             <option value="">-- Select --</option>
-            <option value="Valid" ${ann.reproStatus === 'Valid' ? 'selected' : ''}>Valid</option>
-            <option value="Invalid" ${ann.reproStatus === 'Invalid' ? 'selected' : ''}>Invalid</option>
-            <option value="Partial Valid" ${ann.reproStatus === 'Partial Valid' ? 'selected' : ''}>Partial Valid</option>
+            <option value="Successful" ${ann.reproStatus === 'Successful' ? 'selected' : ''}>Successful</option>
+            <option value="Partial Successful" ${ann.reproStatus === 'Partial Successful' ? 'selected' : ''}>Partial Successful</option>
+            <option value="Unsuccessful" ${ann.reproStatus === 'Unsuccessful' ? 'selected' : ''}>Unsuccessful</option>
             <option value="Others" ${ann.reproStatus === 'Others' ? 'selected' : ''}>Others</option>
           </select>
-        </div>
-        <div class="input-group action-group">
-          <label>Action Taken</label>
-          <div class="multi-select" id="actions-${ticket.id}">
-            <div class="multi-select-display" onclick="toggleMultiSelect('${ticket.id}')">
-              ${getActionDisplay(ann.actionSuggested)}
-            </div>
-            <div class="multi-select-dropdown" id="dropdown-${ticket.id}" onclick="event.stopPropagation()">
-              ${renderActionCheckboxes(ticket.id, ann.actionSuggested)}
-            </div>
-          </div>
         </div>
         <div class="input-group notes-group">
           <label>Notes</label>
@@ -901,68 +879,6 @@ function renderTicketCard(ticket) {
         <button class="btn btn-small btn-danger" onclick="removeTicket('${ticket.id}')">Remove</button>
       </div>
     </div>`;
-}
-
-function getActionDisplay(selected) {
-  const arr = Array.isArray(selected) ? selected : (selected ? [selected] : []);
-  if (arr.length === 0) return '<span style="color:#9ca3af">-- Select --</span>';
-  if (arr.length === 1) return escapeHtml(arr[0]);
-  return `${escapeHtml(arr[0])} +${arr.length - 1} more`;
-}
-
-function toggleMultiSelect(ticketId) {
-  // Close all other dropdowns first
-  document.querySelectorAll('.multi-select-dropdown.open').forEach(el => {
-    if (el.id !== 'dropdown-' + ticketId) el.classList.remove('open');
-  });
-  const dropdown = document.getElementById('dropdown-' + ticketId);
-  dropdown.classList.toggle('open');
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.multi-select-dropdown') && !e.target.closest('.multi-select-display')) {
-    document.querySelectorAll('.multi-select-dropdown.open').forEach(el => el.classList.remove('open'));
-  }
-});
-
-const ACTION_OPTIONS = [
-  'Request repair VS',
-  'Request update VS',
-  'Request reinstall VS',
-  'Request more info about machine',
-  'Request more info about repro steps',
-  'Request sample project',
-  'Request screenshot/video',
-  'Request dump/ETL file',
-  'Others'
-];
-
-function renderActionCheckboxes(ticketId, selected) {
-  // Normalize: support old string format and new array format
-  const selectedArr = Array.isArray(selected) ? selected : (selected ? [selected] : []);
-  return ACTION_OPTIONS.map(opt => {
-    const checked = selectedArr.includes(opt) ? 'checked' : '';
-    const escaped = escapeHtml(opt);
-    return `<label class="checkbox-label">
-      <input type="checkbox" value="${escaped}" ${checked} onchange="handleActionToggle('${ticketId}')"> ${escaped}
-    </label>`;
-  }).join('');
-}
-
-function handleActionToggle(id) {
-  const dropdown = document.getElementById('dropdown-' + id);
-  const checked = [...dropdown.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
-  // Update display text immediately
-  const display = dropdown.previousElementSibling;
-  display.innerHTML = getActionDisplay(checked);
-  // Update local data
-  const ticket = allTickets.find(t => t.id === id);
-  if (ticket) {
-    ticket.annotations.actionSuggested = checked;
-  }
-  // Save to server without re-rendering (to keep dropdown open)
-  saveAnnotation(id, 'actionSuggested', checked);
 }
 
 // ---- BACKLOG NOTIFICATION ----
@@ -1300,29 +1216,6 @@ function showToast(msg, type) {
   toast.className = 'toast show' + (type === 'warn' ? ' toast-warn' : '');
   clearTimeout(showToast._t);
   showToast._t = setTimeout(() => { toast.className = 'toast'; }, 4000);
-}
-
-// ============================================
-// Copilot CLI Launcher — opens terminal with auto-prompt
-// ============================================
-
-async function openCopilotCli(ticketId) {
-  showToast('Opening Copilot CLI...');
-
-  try {
-    const res = await fetch(`${API}/copilot/open-cli`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticketId })
-    });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || `HTTP ${res.status}`);
-    }
-    showToast('✅ Copilot CLI opened with ticket prompt!');
-  } catch (err) {
-    showToast(`❌ ${err.message}`);
-  }
 }
 
 /** Open Ticket Analyst in a new tab (same server) */

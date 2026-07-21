@@ -577,6 +577,11 @@
       return { activate };
     })();
 
+    // Escape HTML special chars for untrusted (customer-supplied) content
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     // Markdown-to-HTML converter
     function md(text) {
       if (!text) return '';
@@ -680,17 +685,17 @@
     function buildTicketSummary(meta) {
       if (!meta) return '';
       const link = meta.devComLink
-        ? `<a href="${meta.devComLink}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">${meta.devComLink}</a>`
+        ? `<a href="${escapeHtml(meta.devComLink)}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">${escapeHtml(meta.devComLink)}</a>`
         : '—';
       return `<h2 id="section-ticket-information">Ticket Information</h2>
         <table>
           <tr><th style="width:150px;">Field</th><th>Value</th></tr>
-          <tr><td>ID</td><td>${meta.id}</td></tr>
-          <tr><td>Title</td><td>${meta.title || '—'}</td></tr>
-          <tr><td>State</td><td><strong>${meta.state || '—'}</strong></td></tr>
-          <tr><td>Area Path</td><td>${meta.areaPath || '—'}</td></tr>
-          <tr><td>Product</td><td>${meta.product || '—'}</td></tr>
-          <tr><td>Version</td><td>${meta.productVersion || '—'}</td></tr>
+          <tr><td>ID</td><td>${escapeHtml(meta.id)}</td></tr>
+          <tr><td>Title</td><td>${escapeHtml(meta.title) || '—'}</td></tr>
+          <tr><td>State</td><td><strong>${escapeHtml(meta.state) || '—'}</strong></td></tr>
+          <tr><td>Area Path</td><td>${escapeHtml(meta.areaPath) || '—'}</td></tr>
+          <tr><td>Product</td><td>${escapeHtml(meta.product) || '—'}</td></tr>
+          <tr><td>Version</td><td>${escapeHtml(meta.productVersion) || '—'}</td></tr>
           <tr><td>Website Link</td><td>${link}</td></tr>
         </table>`;
     }
@@ -709,8 +714,8 @@
       let rows = '';
       const used = new Set();
       const linkify = (a) => a.url
-        ? `<a href="${a.url}" target="_blank" rel="noopener">${a.name}</a>`
-        : a.name;
+        ? `<a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">${escapeHtml(a.name)}</a>`
+        : escapeHtml(a.name);
       const typeCell = (cat) =>
         `${cat.icon} ${cat.label}<br><span style="color:#9ca3af;font-size:0.8em;">${cat.exts}</span>`;
 
@@ -874,7 +879,7 @@
         const reproJob = await refreshReproOutcome(id);
         // Hide progress log once report is ready
         progress.style.display = 'none';
-        document.getElementById('reportTitle').innerHTML = `Analysis :<br><span style="font-size:13px;color:#64748b;">#${id}</span> — ${data.title || ''}`;
+        document.getElementById('reportTitle').innerHTML = `Analysis :<br><span style="font-size:13px;color:#64748b;">#${id}</span> — ${escapeHtml(data.title || '')}`;
 
         // Strip LLM-generated Ticket Summary section (we render it client-side)
         let llmReport = data.report;
@@ -1223,14 +1228,6 @@
         void replySection.offsetWidth; // restart the animation
         replySection.classList.add('flash');
       }
-    }
-
-    function copyReport() {
-      navigator.clipboard.writeText(currentReport).then(() => {
-        const btn = event.target;
-        btn.textContent = '✅ Copied!';
-        setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
-      });
     }
 
     function copyReply() {
